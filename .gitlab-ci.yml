@@ -1,0 +1,52 @@
+stages:
+   - build
+   - test
+   - deploy
+
+build website:
+
+  stage: build 
+  image: node
+
+ 
+
+  script:
+    - npm install
+    - npm install -g gatsby-cli
+    - gatsby build
+    
+  artifacts:
+    paths:
+    - ./public
+
+test artifact:
+
+  stage: test
+  image: node
+  
+
+  script:
+    - grep -q "Gatsby" ./public/index.html
+    
+
+
+test website:
+  image: node  
+  stage: test
+
+  script:
+    - npm install
+    - npm install -g gatsby-cli
+    - gatsby serve &
+    - sleep 3
+    - curl "http://localhost:9000" | tac | tac | grep -q "Gatsby"
+
+  
+deploy to surge:
+  stage: deploy
+  image: node
+
+  script:
+    - npm install --g surge
+    - surge --project ./public --domain noonno.surge.sh
+      
