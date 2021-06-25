@@ -1,19 +1,28 @@
+image: node
+
 stages:
    - build
    - test
    - deploy
+   - deploy staging
+   - deployment tests
+
+cache:
+  key: ${CI_ENVIRONMENT_SLUG}
+  paths:
+    - node_modules/
+
+
 
 build website:
 
   stage: build 
-  image: node
-
  
-
   script:
     - npm install
     - npm install -g gatsby-cli
     - gatsby build
+    - sed -i "s/%%VERSION%%/$CI_COMMIT_SHORT_SHA/" ./public/index.html
     
   artifacts:
     paths:
@@ -22,7 +31,7 @@ build website:
 test artifact:
 
   stage: test
-  image: node
+ 
   
 
   script:
@@ -31,7 +40,7 @@ test artifact:
 
 
 test website:
-  image: node  
+   
   stage: test
 
   script:
@@ -41,12 +50,33 @@ test website:
     - sleep 3
     - curl "http://localhost:9000" | tac | tac | grep -q "Gatsby"
 
+
+deploy staging:
+  stage: deploy staging
+  environment:
+    name: staging
+    url: http://noonno-staging.surge.sh
+  when: manual
+  script:
+    - npm install --g surge
+    - surge --project ./public --domain noonno-staging.surge.sh
   
+
 deploy to surge:
   stage: deploy
-  image: node
-
+  environment:
+    name: productoin
+    url: http://noonno.surge.sh
   script:
     - npm install --g surge
     - surge --project ./public --domain noonno.surge.sh
+
+test deployment:
+  stage: deployment tests
+  
+
+  script:
+    - apt-get update; apt-get install curl
+    - curl -s "https://noonno.surge.sh" | grep -q "Hi people"
+    - curl -s "https://noonno.surge.sh" | grep -q "$CI_COMMIT_SHORT_SHA"  
       
